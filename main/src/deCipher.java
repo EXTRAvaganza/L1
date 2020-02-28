@@ -1,17 +1,23 @@
 import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
 class deCipher {
+    private ArrayList<Character> result;
+    private ArrayList<Character> sourceText;
+    private ArrayList<Character> cipherText;
     private char[][] cipherMatrix;
     private char[][] deCipherMatrix;
-    deCipher()
+    deCipher(ArrayList<Character> sourceText)
     {
+        this.sourceText = sourceText;
         createCipherMatrix();
         createDeCipherMatrix();
-        deCipherText(getTextFromFile());
+        cipherText = getTextFromFile();
+        deCipherText(cipherText,getFirstKey(cipherText));
     }
     private void createCipherMatrix() {
         cipherMatrix = new char[26][26];
@@ -49,16 +55,12 @@ class deCipher {
         ArrayList<Character> temp = new ArrayList<>();
         try{
             FileInputStream fileOutputStream = new FileInputStream(file.getSelectedFile());
-            while(true)
+            while (true)
             {
                 tInt = fileOutputStream.read();
                 if(tInt==-1)
                     break;
-                if((tInt>=97 && tInt<=122) || (tInt>=65 && tInt<=90))
-                    if(tInt <= 90)
-                        temp.add ((char)(tInt+32));
-                    else
-                        temp.add((char)tInt);
+                temp.add((char)tInt);
             }
         }
         catch (IOException ex)
@@ -67,31 +69,89 @@ class deCipher {
         }
         return temp;
     }
-    private void deCipherText(ArrayList<Character> array)
+
+    private char getLastChar(ArrayList<Character> temp, int lastInd)
+    {
+        for(int i=lastInd-1;i>=0;i--)
+            if(temp.get(i)>=97 && temp.get(i)<=122)
+                return temp.get(i);
+        return 'a';
+    }
+    private char getFirstKey(ArrayList<Character> array)
     {
         ArrayList[] result = new ArrayList[26];
         for(int i=0;i<26;i++)
         {
             result[i] = new ArrayList<Character>();
-            result[i].add(deCipherChar(array.get(0),(char)('a'+i)));
-        }
-        for(int i=0;i<26;i++)
-        {
-            for(int j=0;j<array.size()-1;j++)
+            for(int j=0;j<20;j++)
             {
-                result[i].add(deCipherChar(array.get(j+1), (Character) result[i].get(j)));
+                if(array.get(j)>= 97 && array.get(j)<=122)
+                {
+                    if(result[i].size()==0)
+                        result[i].add(deCipherChar(array.get(j), (char) ('a'+i)));
+                    else
+                        result[i].add(deCipherChar(array.get(j),getLastChar(result[i],result[i].size())));
+                }
+                else
+                    result[i].add(array.get(j));
+            }
+            if (checkEqual(result[i]))
+            {
+                System.out.println((char)('a'+i));
+                return (char)('a'+i);
             }
         }
-        for (int i=0;i<26;i++)
-        {
-            for(int j=0;j<result[i].size();j++)
-                System.out.print(result[i].get(j));
-            System.out.println();
-        }
+        return 'a';
+    }
+    private void deCipherText(ArrayList<Character> array,char key)
+    {
+
+            result = new ArrayList<Character>();
+            for(int j=0;j<array.size();j++)
+            {
+                if(array.get(j)>= 97 && array.get(j)<=122)
+                {
+                    if(result.size()==0)
+                        result.add(deCipherChar(array.get(j), key));
+                    else
+                        result.add(deCipherChar(array.get(j),getLastChar(result,result.size())));
+                }
+                else
+                    result.add(array.get(j));
+            }
+                saveResultText(this.result);
+    }
+    private boolean checkEqual(ArrayList<Character> array)
+    {
+        for(int i=0;i<array.size();i++)
+            if(sourceText.get(i).equals(array.get(i))!=true)
+                return false;
+            return true;
     }
     private char deCipherChar(char cipherChar,char prevChar)
     {
         return deCipherMatrix[(int)cipherChar-97][(int)prevChar-97];
     }
-
+    private void saveResultText(ArrayList<Character> out) {
+        char[] array = new char[out.size()];
+        for(int i=0;i<array.length;i++)
+        {
+            array[i] = out.get(i);
+        }
+        JFileChooser file = new JFileChooser();
+        file.setCurrentDirectory(new File("C:\\Users\\Рафаэль\\Desktop"));
+        file.showSaveDialog(file);
+        File file1 = new File(String.valueOf(file.getSelectedFile()));
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file1);
+            for (char c : array) {
+                fileOutputStream.write(c);
+            }
+            fileOutputStream.close();
+        }
+        catch (IOException ex)
+        {
+            System.out.print("Exception happened");
+        }
+    }
 }
